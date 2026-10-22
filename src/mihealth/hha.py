@@ -44,6 +44,41 @@ POS_KEEP = {
 }
 
 
+def assess_rn_wage_quality(
+    staff: pd.DataFrame,
+    ratio_band: tuple[float, float] = (0.7, 1.3),
+    wage_band: tuple[float, float] = (15.0, 90.0),
+) -> pd.Series:
+    """Flag filed RN average hourly wages that can't be trusted.
+
+    Per-visit-paid workforces have no real payroll hours, so the S-3 Part V
+    paid-hours denominator is often fiction and the computed wage inflates
+    (observed: $198/hr). Two checks, both required for 'ok':
+
+    1. Internal: rn_paid_hours / (rn_ftes * 2080) within ratio_band. This is
+       necessary but NOT sufficient - the form derives FTEs as hours/2080, so
+       many filers' two numbers agree because they share the same fiction
+       (observed: a 'consistent' $281/hr).
+    2. External: the wage itself within wage_band. Loaded cost (salary +
+       fringes) per hour for Michigan employee RNs plausibly spans ~$15-90
+       (BLS MI RN mean is ~$39 unloaded); outside that is per-visit math or
+       misfiled dollars, not a wage.
+
+    Wage present but no usable FTEs/hours -> 'unverifiable'; no wage -> NA.
+    """
+    expected_hours = (staff["rn_ftes"] * 2080).where(staff["rn_ftes"] > 0)
+    ratio = staff["rn_paid_hours"] / expected_hours
+    has_wage = staff["rn_avg_hourly_wage"].notna()
+    plausible = staff["rn_avg_hourly_wage"].between(*wage_band)
+
+    quality = pd.Series(pd.NA, index=staff.index, dtype="object")
+    quality[has_wage] = "unverifiable"
+    quality[has_wage & ~plausible] = "suspect"
+    quality[has_wage & ratio.notna() & ~ratio.between(*ratio_band)] = "suspect"
+    quality[has_wage & plausible & ratio.between(*ratio_band)] = "ok"
+    return quality.rename("rn_wage_quality")
+
+
 def pick_annual_report(rpt: pd.DataFrame, min_days: int = ANNUAL_MIN_DAYS) -> pd.DataFrame:
     """One report per provider: prefer annual coverage, then latest FY end.
 
@@ -95,6 +130,7 @@ def build_mi_hha_extract(data_dir: Path, pos_csv: Path) -> pd.DataFrame:
     picked = pick_annual_report(hcris["rpt"])
     directory = build_directory(picked, hcris["alpha"], HHA20_IDENTITY)
     staffing = extract_cells(hcris["nmrc"], HHA20_STAFFING, values_from="ITM_VAL_NUM")
+    staffing["rn_wage_quality"] = assess_rn_wage_quality(staffing)
     finance = extract_cells(hcris["nmrc"], HHA20_FINANCE, values_from="ITM_VAL_NUM")
     home_office = extract_cells(
         hcris["alpha"], HHA20_HOME_OFFICE, values_from="ALPHNMRC_ITM_TXT"

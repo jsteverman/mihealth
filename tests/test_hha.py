@@ -46,7 +46,33 @@ def test_staffing_cells(reliable_nmrc):
     assert row["aide_hours"] == 11
     assert row["rn_ftes"] == 0.06
     assert row["rn_avg_hourly_wage"] == pytest.approx(48.52)
+    assert row["rn_paid_hours"] == pytest.approx(93.61)
     assert row["nursing_paid_hours"] == pytest.approx(114.53)
+
+
+def test_rn_wage_quality():
+    from mihealth.hha import assess_rn_wage_quality
+
+    staff = pd.DataFrame(
+        {
+            # 1 ok: hours match FTEs, wage plausible
+            # 2 suspect: real Ohioans/Saline numbers (6472h vs 4.98 FTE)
+            # 3 unverifiable: no FTEs to check against
+            # 4 NA: no wage filed
+            # 5 suspect: real Danny's numbers - internally consistent
+            #   (467h = 0.22 FTE x 2080, the circular case) but $281/hr
+            "rn_avg_hourly_wage": [45.0, 198.23, 60.0, None, 281.45],
+            "rn_paid_hours": [2080.0, 6472.0, 500.0, None, 467.0],
+            "rn_ftes": [1.0, 4.98, None, 2.0, 0.22],
+        },
+        index=[1, 2, 3, 4, 5],
+    )
+    q = assess_rn_wage_quality(staff)
+    assert q.loc[1] == "ok"
+    assert q.loc[2] == "suspect"
+    assert q.loc[3] == "unverifiable"
+    assert pd.isna(q.loc[4])
+    assert q.loc[5] == "suspect"
 
 
 def test_home_office_cells():

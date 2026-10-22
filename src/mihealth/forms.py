@@ -55,6 +55,7 @@ HHA20_STAFFING = {
     "lpn_ftes": ("S300000", "02000", "00300"),
     "aide_ftes": ("S300000", "03200", "00300"),
     "rn_avg_hourly_wage": ("S300005", "00200", "00500"),
+    "rn_paid_hours": ("S300005", "00200", "00400"),
     "lpn_avg_hourly_wage": ("S300005", "00300", "00500"),
     "nursing_paid_hours": ("S300005", "00400", "00400"),
     "contract_rn_avg_hourly_wage": ("S300005", "01500", "00500"),
