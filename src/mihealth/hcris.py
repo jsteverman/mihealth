@@ -102,6 +102,30 @@ def extract_cells(
     return pd.concat(fields, axis=1)
 
 
+def extract_line_values(
+    df: pd.DataFrame,
+    wksht: str,
+    line_prefix: str,
+    clmn: str,
+    values_from: str,
+    sep: str = "|",
+) -> pd.Series:
+    """All values on a subscripted line, joined per report in line order.
+
+    Some form lines repeat via subscripts (line 35 -> LINE_NUM 03500, 03501,
+    ...), e.g. the 1728-20 S-3 Part III list of service-area CBSAs. One cell
+    address can't capture those; this collapses them to one delimited string
+    per RPT_REC_NUM. Reports without the line are simply absent (join as NaN).
+    """
+    mask = (
+        (df["WKSHT_CD"] == wksht)
+        & df["LINE_NUM"].str.startswith(line_prefix)
+        & (df["CLMN_NUM"] == clmn)
+    )
+    hits = df.loc[mask].sort_values("LINE_NUM")
+    return hits.groupby("RPT_REC_NUM")[values_from].agg(sep.join)
+
+
 def load_alpha(path: str | Path, rpt_rec_nums: Iterable[int]) -> pd.DataFrame:
     return _load_filtered(path, ALPH_COLUMNS, rpt_rec_nums)
 

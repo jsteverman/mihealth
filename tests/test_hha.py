@@ -63,6 +63,18 @@ def test_home_office_cells():
     assert row["home_office_state"] == "OH"
 
 
+def test_service_area_cbsas():
+    from mihealth.hcris import extract_line_values, load_alpha
+
+    alpha = load_alpha(DATA_DIR / "HHA20FY2024" / "HHA20_2024_alpha.csv", {RELIABLE})
+    areas = extract_line_values(
+        alpha, "S300000", "035", "00100", values_from="ALPHNMRC_ITM_TXT"
+    )
+    # Farmington Hills office; served Detroit-Dearborn-Livonia (19804) and
+    # Warren-Troy-Farmington Hills (47664) metro divisions, in line order.
+    assert areas.loc[RELIABLE] == "19804|47664"
+
+
 # --- pick_annual_report, on a micro-frame ------------------------------------
 
 

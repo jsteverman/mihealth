@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from mihealth.cbsa import load_cbsa_names, name_cbsa_list
 from mihealth.directory import build_directory
 from mihealth.forms import (
     HHA20_FINANCE,
@@ -16,7 +17,14 @@ from mihealth.forms import (
     HHA20_IDENTITY,
     HHA20_STAFFING,
 )
-from mihealth.hcris import extract_cells, filter_state, load_alpha, load_nmrc, load_rpt
+from mihealth.hcris import (
+    extract_cells,
+    extract_line_values,
+    filter_state,
+    load_alpha,
+    load_nmrc,
+    load_rpt,
+)
 
 # A report covering at least this many days counts as "annual" for the
 # most-recent-annual-revenue selection.
@@ -91,8 +99,21 @@ def build_mi_hha_extract(data_dir: Path, pos_csv: Path) -> pd.DataFrame:
     home_office = extract_cells(
         hcris["alpha"], HHA20_HOME_OFFICE, values_from="ALPHNMRC_ITM_TXT"
     )
-    report = directory.join([staffing, finance, home_office]).join(
+    # S-3 Part III line 35 (subscripted): CBSAs where Medicare services were
+    # actually delivered - the operating footprint, vs the office address.
+    service_area = extract_line_values(
+        hcris["alpha"], "S300000", "035", "00100", values_from="ALPHNMRC_ITM_TXT"
+    ).rename("service_area_cbsas")
+    report = directory.join([staffing, finance, home_office, service_area]).join(
         picked.set_index("RPT_REC_NUM")[["hcris_year", "RPT_STUS_CD", "UTIL_CD"]]
+    )
+
+    cbsa_names = load_cbsa_names(
+        data_dir / "reference" / "cbsa_delineation_2023.xlsx",
+        data_dir / "documentation" / "HOSPITAL2010-DOCUMENTATION" / "HCRIS_STATE_CODES.csv",
+    )
+    report["service_area_names"] = report["service_area_cbsas"].map(
+        lambda codes: name_cbsa_list(codes, cbsa_names), na_action="ignore"
     )
 
     pos = load_pos_universe(pos_csv)
