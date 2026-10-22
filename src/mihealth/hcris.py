@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from pathlib import Path
 
 import pandas as pd
@@ -31,6 +32,15 @@ ALPH_COLUMNS = {
     "ALPHNMRC_ITM_TXT": "str",
 }
 
+NMRC_COLUMNS = {
+    "RPT_REC_NUM": "int64",
+    "WKSHT_CD": "str",
+    "LINE_NUM": "str",
+    "CLMN_NUM": "str",
+    "ITM_VAL_NUM": "float64",
+}
+
+
 def load_rpt(path: str | Path) -> pd.DataFrame:
     dates = [c for c, t in RPT_COLUMNS.items() if t == "date"]
     dtypes = {c: t for c, t in RPT_COLUMNS.items() if t != "date"}
@@ -51,16 +61,51 @@ def filter_state(rpt: pd.DataFrame, state: str) -> pd.DataFrame:
     filtered = rpt[rpt["PRVDR_NUM"].str.startswith(state)]
     return filtered
 
-def load_alpha(path: str | Path, rpt_rec_nums: list[str]) -> pd.DataFrame:
+
+def _load_filtered(
+    path: str | Path, columns: dict[str, str], rpt_rec_nums: Iterable[int]
+) -> pd.DataFrame:
     rec_set = set(rpt_rec_nums)
     iter_csv = pd.read_csv(
-            path,
-            iterator=True,
-            chunksize=500_000,
-            header=None,
-            names=list(ALPH_COLUMNS),
-            dtype=ALPH_COLUMNS
-            )
-    chunks = [chunk[chunk['RPT_REC_NUM'].isin(rec_set)] for chunk in iter_csv]
+        path,
+        iterator=True,
+        chunksize=500_000,
+        header=None,
+        names=list(columns),
+        dtype=columns,
+    )
+    chunks = [chunk[chunk["RPT_REC_NUM"].isin(rec_set)] for chunk in iter_csv]
     df = pd.concat(chunks, ignore_index=True)
     return df
+
+
+def extract_cells(
+    df: pd.DataFrame, cellmap: dict[str, tuple[str, str, str]], values_from: str
+) -> pd.DataFrame:
+    """One row per RPT_REC_NUM, one column per cellmap key.
+
+    Cells absent from df come back as NaN. Duplicate cells (same report,
+    same address, more than once) mean our form assumptions are wrong:
+    raise rather than silently pick one.
+    """
+    fields = []
+    for field, (wksht, line, clmn) in cellmap.items():
+        mask = (
+            (df["WKSHT_CD"] == wksht)
+            & (df["LINE_NUM"] == line)
+            & (df["CLMN_NUM"] == clmn)
+        )
+        values = df.loc[mask].set_index("RPT_REC_NUM")[values_from]
+        if values.index.has_duplicates:
+            raise ValueError(f"duplicate cells for {field!r} at {(wksht, line, clmn)}")
+        fields.append(values.rename(field))
+    return pd.concat(fields, axis=1)
+
+
+def load_alpha(path: str | Path, rpt_rec_nums: Iterable[int]) -> pd.DataFrame:
+    return _load_filtered(path, ALPH_COLUMNS, rpt_rec_nums)
+
+
+def load_nmrc(path: str | Path, rpt_rec_nums: Iterable[int]) -> pd.DataFrame:
+    return _load_filtered(path, NMRC_COLUMNS, rpt_rec_nums)
+

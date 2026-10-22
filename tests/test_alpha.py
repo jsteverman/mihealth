@@ -2,40 +2,11 @@
 
 Alpha files are large (79MB for hospitals), so load_alpha streams in chunks
 and keeps only rows for the requested RPT_REC_NUMs. Ground-truth values below
-were verified against the raw SNF CSV with awk/grep.
+were verified against the raw SNF CSV with awk/grep. Shared fixtures
+(mi_alpha, mi_snf_recs, snf_alpha_path) live in conftest.py.
 """
 
-from pathlib import Path
-
-import pandas as pd
-import pytest
-
 from mihealth.hcris import load_alpha
-
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-SNF_ALPHA = DATA_DIR / "SNF10FY2025" / "SNF10_2025_alpha.csv"
-
-# The 13 Michigan SNF reports in the FY2025 rpt file
-MI_SNF_RECS = {
-    1434340,
-    1448178,
-    1448231,
-    1448306,
-    1448307,
-    1448482,
-    1448483,
-    1448793,
-    1448794,
-    1449670,
-    1449835,
-    1449836,
-    1450326,
-}
-
-
-@pytest.fixture(scope="module")
-def mi_alpha() -> pd.DataFrame:
-    return load_alpha(SNF_ALPHA, MI_SNF_RECS)
 
 
 def test_has_documented_columns_in_order(mi_alpha):
@@ -48,8 +19,8 @@ def test_has_documented_columns_in_order(mi_alpha):
     ]
 
 
-def test_keeps_exactly_the_requested_reports(mi_alpha):
-    assert set(mi_alpha["RPT_REC_NUM"]) == MI_SNF_RECS
+def test_keeps_exactly_the_requested_reports(mi_alpha, mi_snf_recs):
+    assert set(mi_alpha["RPT_REC_NUM"]) == mi_snf_recs
 
 
 def test_row_counts_match_raw_file(mi_alpha):
@@ -75,7 +46,7 @@ def test_line_and_column_are_zero_padded_strings(mi_alpha):
     assert name == "THE ORCHARDS AT CANTERBURY ON THE LA"
 
 
-def test_empty_report_set_gives_empty_frame_with_columns(mi_alpha):
-    empty = load_alpha(SNF_ALPHA, set())
+def test_empty_report_set_gives_empty_frame_with_columns(mi_alpha, snf_alpha_path):
+    empty = load_alpha(snf_alpha_path, set())
     assert len(empty) == 0
     assert list(empty.columns) == list(mi_alpha.columns)
