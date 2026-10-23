@@ -4,8 +4,9 @@ A tested Python pipeline and interactive explorer for CMS cost report data on
 Michigan healthcare facilities, currently focused on **home health agencies**:
 who they are, who operates them, where they work, what they earn and spend.
 
-**Live explorer:** _link added after deploy_ · built with
-[Streamlit](https://streamlit.io), data committed at `output/mi_hha_extract.csv`.
+**Live explorer: [mihealth.streamlit.app](https://mihealth.streamlit.app)** ·
+built with [Streamlit](https://streamlit.io), data committed at
+`output/mi_hha_extract.csv`.
 
 ## What's in the dataset
 
