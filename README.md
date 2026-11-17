@@ -66,9 +66,12 @@ universe, active and terminated), combining:
       directory.py  facility directory with ownership decoding
       cbsa.py       CBSA/metro-division/rural-code -> name lookup
       hha.py        the Michigan HHA extract build
-    scripts/        build_hha_extract.py, fetch_reference_data.py
+    scripts/        build_hha_extract.py, fetch_reference_data.py,
+                    make_fixtures.py
     tests/          76 pytest tests: ground truth verified against raw CSVs
-                    and CMS form PDFs; Streamlit smoke tests via AppTest
+                    and CMS form PDFs; Streamlit smoke tests via AppTest.
+                    Runs from committed fixtures (tests/fixtures/, ~2MB
+                    trimmed from the raw files) — no downloads needed.
     app.py          the explorer
 
 ## Running locally
@@ -76,7 +79,9 @@ universe, active and terminated), combining:
 ```bash
 uv sync
 uv run streamlit run app.py          # uses the committed extract CSV
-uv run pytest                        # full-data tests need the raw files:
+uv run pytest                        # runs offline from committed fixtures
+
+# Rebuilding the extract needs the full raw data (not committed):
 uv run python scripts/fetch_reference_data.py   # POS + Census inputs
 # HCRIS raw files (manual, ~600MB): see scripts/fetch_reference_data.py
 uv run python scripts/build_hha_extract.py      # rebuild the extract

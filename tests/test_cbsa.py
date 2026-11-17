@@ -6,7 +6,7 @@ import pytest
 
 from mihealth.cbsa import load_cbsa_names, name_cbsa_list
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+DATA_DIR = Path(__file__).resolve().parent / "fixtures"
 
 
 @pytest.fixture(scope="module")

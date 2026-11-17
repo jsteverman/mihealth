@@ -11,7 +11,7 @@ import pytest
 
 from mihealth.hcris import filter_state, load_rpt
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+DATA_DIR = Path(__file__).resolve().parent / "fixtures"
 FILES = {
     "SNF": DATA_DIR / "SNF10FY2025" / "SNF10_2025_rpt.csv",
     "HHA": DATA_DIR / "HHA20FY2025" / "HHA20_2025_rpt.csv",

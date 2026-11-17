@@ -12,7 +12,7 @@ import pytest
 
 from mihealth.hcris import load_alpha, load_nmrc
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+DATA_DIR = Path(__file__).resolve().parent / "fixtures"
 
 # The 13 Michigan SNF reports in the FY2025 rpt file, verified with awk
 _MI_SNF_RECS = {

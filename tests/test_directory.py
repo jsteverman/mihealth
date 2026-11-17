@@ -19,7 +19,7 @@ from mihealth.directory import build_directory
 from mihealth.forms import HHA20_IDENTITY, HOSP10_IDENTITY, SNF10_IDENTITY
 from mihealth.hcris import filter_state, load_alpha, load_rpt
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+DATA_DIR = Path(__file__).resolve().parent / "fixtures"
 
 
 @pytest.fixture(scope="module")

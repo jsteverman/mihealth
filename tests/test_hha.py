@@ -16,7 +16,7 @@ from mihealth.forms import HHA20_FINANCE, HHA20_STAFFING
 from mihealth.hcris import extract_cells, load_nmrc
 from mihealth.hha import pick_annual_report
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+DATA_DIR = Path(__file__).resolve().parent / "fixtures"
 RELIABLE = 573443
 
 
